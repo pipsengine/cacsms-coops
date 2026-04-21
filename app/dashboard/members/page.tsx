@@ -2,8 +2,8 @@
 import { Plus, Search, Filter, Loader2, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getMembersBySociety } from "@/app/actions/members";
-import { getOrCreateDefaultSociety } from "@/app/actions/context";
+import { getMembersBySociety } from "@/server/actions/members";
+import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function MembersPage() {

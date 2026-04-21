@@ -3,7 +3,7 @@ import { Wallet, Coins, PiggyBank, ArrowDownRight, ArrowUpRight, Activity, HandC
 import LinkWrapper from "next/link";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { getPortalOverviewData } from "@/app/actions/portal";
+import { getPortalOverviewData } from "@/server/actions/portal";
 
 export default function PortalDashboard() {
   const { user } = useAuth();

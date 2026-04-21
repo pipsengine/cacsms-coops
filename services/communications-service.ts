@@ -1,4 +1,3 @@
-"use server";
 import { prisma } from "@/database/client";
 import { logAudit } from "@/lib/audit";
 
@@ -13,12 +12,12 @@ export async function createSupportTicket(data: any, societyId: string, authUser
         category: data.category,
         priority: data.priority || "MEDIUM",
         messages: {
-            create: [
-                {
-                    senderId: authUserId,
-                    message: data.description
-                }
-            ]
+          create: [
+            {
+              senderId: authUserId,
+              message: data.description
+            }
+          ]
         }
       }
     });
@@ -32,33 +31,30 @@ export async function createSupportTicket(data: any, societyId: string, authUser
 
 export async function sendBroadcastNotification(data: any, societyId: string, authUserId: string) {
   try {
-    // 1. Fetch eligible users (Could be filtered by Branch or Audience role)
     const members = await prisma.membership.findMany({
-        where: { societyId, status: "ACTIVE" },
-        select: { userId: true }
+      where: { societyId, status: "ACTIVE" },
+      select: { userId: true }
     });
 
-    // 2. Queue notifications (In production, this moves to a background queue/worker)
-    const notifications = await prisma.notification.createMany({
-        data: members.map(m => ({
-            societyId,
-            userId: m.userId,
-            title: data.title,
-            message: data.message,
-            type: data.type || "SYSTEM"
-        }))
+    await prisma.notification.createMany({
+      data: members.map((member) => ({
+        societyId,
+        userId: member.userId,
+        title: data.title,
+        message: data.message,
+        type: data.type || "SYSTEM"
+      }))
     });
 
-    // 3. Log External Integration intent (e.g. tracking SMS fired)
     if (data.sendSMS) {
-        await prisma.integrationLog.create({
-            data: {
-                societyId,
-                service: "TWILIO_SMS",
-                status: "QUEUED",
-                payload: JSON.stringify({ count: members.length, text: data.message })
-            }
-        });
+      await prisma.integrationLog.create({
+        data: {
+          societyId,
+          service: "TWILIO_SMS",
+          status: "QUEUED",
+          payload: JSON.stringify({ count: members.length, text: data.message })
+        }
+      });
     }
 
     await logAudit(societyId, authUserId, "BROADCAST_SENT", "NOTIFICATION", null, { count: members.length });

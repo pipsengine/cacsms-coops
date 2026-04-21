@@ -1,4 +1,3 @@
-"use server";
 import { prisma } from "@/database/client";
 import { logAudit } from "@/lib/audit";
 
@@ -43,7 +42,6 @@ export async function createSocietyAction(data: {
       }
     });
 
-    // Create the profile entry for the new membership
     await prisma.memberProfile.create({
       data: { membershipId: membership.id }
     });

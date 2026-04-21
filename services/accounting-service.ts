@@ -1,36 +1,35 @@
-"use server";
 import { prisma } from "@/database/client";
 import { logAudit } from "@/lib/audit";
 
 export async function getAccountingOverviewData(societyId: string) {
-   try {
-      const bankAccounts = await prisma.bankAccount.findMany({
-         where: { societyId }
-      });
-      const totalCash = bankAccounts.reduce((sum, b) => sum + b.balance, 0);
+  try {
+    const bankAccounts = await prisma.bankAccount.findMany({
+      where: { societyId }
+    });
+    const totalCash = bankAccounts.reduce((sum, account) => sum + account.balance, 0);
 
-      const recentJournals = await prisma.journalEntry.findMany({
-         where: { societyId },
-         orderBy: { date: "desc" },
-         take: 5,
-         include: { lines: { include: { account: true } } }
-      });
+    const recentJournals = await prisma.journalEntry.findMany({
+      where: { societyId },
+      orderBy: { date: "desc" },
+      take: 5,
+      include: { lines: { include: { account: true } } }
+    });
 
-      const vouchers = await prisma.expenseVoucher.findMany({
-         where: { societyId, status: "APPROVED" }
-      });
-      const totalExpenses = vouchers.reduce((sum, v) => sum + v.amount, 0);
+    const vouchers = await prisma.expenseVoucher.findMany({
+      where: { societyId, status: "APPROVED" }
+    });
+    const totalExpenses = vouchers.reduce((sum, voucher) => sum + voucher.amount, 0);
 
-      return {
-         success: true,
-         bankAccountsCount: bankAccounts.length,
-         totalCash,
-         totalExpenses,
-         recentJournals
-      };
-   } catch(error: any) {
-      return { success: false, error: error.message };
-   }
+    return {
+      success: true,
+      bankAccountsCount: bankAccounts.length,
+      totalCash,
+      totalExpenses,
+      recentJournals
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
 }
 
 export async function createExpenseVoucher(data: any, societyId: string, authUserId: string) {
@@ -56,9 +55,9 @@ export async function createExpenseVoucher(data: any, societyId: string, authUse
 
 export async function postJournalEntry(data: any, societyId: string, authUserId: string) {
   try {
-    const totalDebit = data.lines.reduce((acc: number, line: any) => acc + (line.debit || 0), 0);
-    const totalCredit = data.lines.reduce((acc: number, line: any) => acc + (line.credit || 0), 0);
-    
+    const totalDebit = data.lines.reduce((sum: number, line: any) => sum + (line.debit || 0), 0);
+    const totalCredit = data.lines.reduce((sum: number, line: any) => sum + (line.credit || 0), 0);
+
     if (totalDebit !== totalCredit) {
       throw new Error("Journal entry doesn't balance.");
     }
@@ -78,8 +77,6 @@ export async function postJournalEntry(data: any, societyId: string, authUserId:
         }
       }
     });
-
-    // Note: A robust system calculates balances async or triggers DB recalculations here.
 
     await logAudit(societyId, authUserId, "JOURNAL_POSTED", "JOURNAL_ENTRY", journal.id, {});
     return { success: true, journal };

@@ -1,49 +1,45 @@
-"use server";
 import { prisma } from "@/database/client";
 import { logAudit } from "@/lib/audit";
 import { generateReceiptNumber } from "@/utilities/receipts";
-import { TransactionType } from "@prisma/client";
 
 export async function getTreasuryOverviewData(societyId: string) {
   try {
-     // Fetch the global sum of savings & shares by summing up the members table (for speed)
-     const aggregate = await prisma.membership.aggregate({
-        where: { societyId },
-        _sum: {
-           totalSavings: true,
-           totalShares: true
-        }
-     });
+    const aggregate = await prisma.membership.aggregate({
+      where: { societyId },
+      _sum: {
+        totalSavings: true,
+        totalShares: true
+      }
+    });
 
-     // Fetch the last 5 receipts
-     const recentTransactions = await prisma.transaction.findMany({
-        where: { societyId },
-        orderBy: { transactionDate: "desc" },
-        take: 5,
-        include: {
-           membership: {
-              include: { user: true }
-           },
-           product: true,
-           receipt: true
-        }
-     });
+    const recentTransactions = await prisma.transaction.findMany({
+      where: { societyId },
+      orderBy: { transactionDate: "desc" },
+      take: 5,
+      include: {
+        membership: {
+          include: { user: true }
+        },
+        product: true,
+        receipt: true
+      }
+    });
 
-     return {
-        success: true,
-        totalSavings: aggregate._sum.totalSavings || 0,
-        totalShares: aggregate._sum.totalShares || 0,
-        recentTransactions
-     };
+    return {
+      success: true,
+      totalSavings: aggregate._sum.totalSavings || 0,
+      totalShares: aggregate._sum.totalShares || 0,
+      recentTransactions
+    };
   } catch (error: any) {
-     return { success: false, error: error.message };
+    return { success: false, error: error.message };
   }
 }
 
 export async function getContributionProducts(societyId: string) {
-    return prisma.contributionProduct.findMany({
-        where: { societyId }
-    });
+  return prisma.contributionProduct.findMany({
+    where: { societyId }
+  });
 }
 
 export async function createContributionProduct(data: any, societyId: string, authUserId: string) {
@@ -70,10 +66,8 @@ export async function createContributionProduct(data: any, societyId: string, au
 
 export async function postTransaction(data: any, societyId: string, authUserId: string) {
   try {
-    // 1. Transaction Generation
     const receiptNo = generateReceiptNumber();
-    
-    // 2. Start a Prisma Interactive Transaction to ensure Ledger & Members sync perfectly
+
     const result = await prisma.$transaction(async (tx) => {
       const transaction = await tx.transaction.create({
         data: {
@@ -81,7 +75,7 @@ export async function postTransaction(data: any, societyId: string, authUserId: 
           membershipId: data.membershipId,
           productId: data.productId || null,
           amount: parseFloat(data.amount),
-          type: data.type, // CREDIT or DEBIT
+          type: data.type,
           paymentMethod: data.paymentMethod,
           reference: data.reference,
           narration: data.narration,
@@ -90,7 +84,6 @@ export async function postTransaction(data: any, societyId: string, authUserId: 
         }
       });
 
-      // Maintain Receipt uniqueness & physical track
       const receipt = await tx.receipt.create({
         data: {
           transactionId: transaction.id,
@@ -98,7 +91,6 @@ export async function postTransaction(data: any, societyId: string, authUserId: 
         }
       });
 
-      // Update Member Ledger Rollups (Only tracking primary SAVINGS and SHARES explicitly in cache for perf)
       if (data.type === "CREDIT") {
         if (data.productCategory === "SAVINGS") {
           await tx.membership.update({
@@ -112,8 +104,7 @@ export async function postTransaction(data: any, societyId: string, authUserId: 
           });
         }
       } else if (data.type === "DEBIT") {
-        // Withdrawals logic
-         if (data.productCategory === "SAVINGS") {
+        if (data.productCategory === "SAVINGS") {
           await tx.membership.update({
             where: { id: data.membershipId },
             data: { totalSavings: { decrement: parseFloat(data.amount) } }
@@ -129,8 +120,9 @@ export async function postTransaction(data: any, societyId: string, authUserId: 
       return { transaction, receipt };
     });
 
-    await logAudit(societyId, authUserId, "TRANSACTION_POSTED", "TRANSACTION", result.transaction.id, { 
-      amount: data.amount, receiptUrl: result.receipt.receiptNumber 
+    await logAudit(societyId, authUserId, "TRANSACTION_POSTED", "TRANSACTION", result.transaction.id, {
+      amount: data.amount,
+      receiptUrl: result.receipt.receiptNumber
     });
 
     return { success: true, receipt: result.receipt };

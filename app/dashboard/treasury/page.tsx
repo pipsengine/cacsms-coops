@@ -2,8 +2,8 @@
 import { Receipt, Coins, PiggyBank, ArrowDownRight, ArrowUpRight, PlusCircle, Link as LinkIcon, Loader2 } from "lucide-react";
 import LinkWrapper from "next/link";
 import { useState, useEffect } from "react";
-import { getTreasuryOverviewData } from "@/app/actions/treasury";
-import { getOrCreateDefaultSociety } from "@/app/actions/context";
+import { getTreasuryOverviewData } from "@/server/actions/treasury";
+import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function TreasuryDashboard() {

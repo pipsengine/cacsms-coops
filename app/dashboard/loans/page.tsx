@@ -2,8 +2,8 @@
 import { HandCoins, Activity, Target, ShieldAlert, ArrowRight, Settings, Loader2 } from "lucide-react";
 import LinkWrapper from "next/link";
 import { useState, useEffect } from "react";
-import { getLoanOverviewData } from "@/app/actions/loans";
-import { getOrCreateDefaultSociety } from "@/app/actions/context";
+import { getLoanOverviewData } from "@/server/actions/loans";
+import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function LoansDashboard() {

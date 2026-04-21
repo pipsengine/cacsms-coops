@@ -3,8 +3,8 @@ import { ArrowLeft, Save, Loader2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createMemberAction } from "@/app/actions/members";
-import { getOrCreateDefaultSociety } from "@/app/actions/context";
+import { createMemberAction } from "@/server/actions/members";
+import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function NewMemberPage() {

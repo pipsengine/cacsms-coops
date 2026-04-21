@@ -2,9 +2,9 @@
 import { ArrowLeft, Save, Loader2, Info, CheckCircle2 } from "lucide-react";
 import LinkWrapper from "next/link";
 import { useState, useEffect } from "react";
-import { getMembersBySociety } from "@/app/actions/members";
-import { getLoanProducts, applyForLoan } from "@/app/actions/loans";
-import { getOrCreateDefaultSociety } from "@/app/actions/context";
+import { getMembersBySociety } from "@/server/actions/members";
+import { getLoanProducts, applyForLoan } from "@/server/actions/loans";
+import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function NewLoanApplication() {

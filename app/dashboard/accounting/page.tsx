@@ -1,8 +1,8 @@
 "use client";
 import { Receipt, BarChart3, PieChart, Landmark, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getAccountingOverviewData } from "@/app/actions/accounting";
-import { getOrCreateDefaultSociety } from "@/app/actions/context";
+import { getAccountingOverviewData } from "@/server/actions/accounting";
+import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function AccountingDashboard() {

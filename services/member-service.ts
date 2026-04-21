@@ -1,9 +1,8 @@
-"use server";
 import { prisma } from "@/database/client";
 import { logAudit } from "@/lib/audit";
 
 export async function getMembersBySociety(societyId: string) {
-  return await prisma.membership.findMany({
+  return prisma.membership.findMany({
     where: { societyId },
     include: {
       profile: true,
@@ -16,17 +15,13 @@ export async function getMembersBySociety(societyId: string) {
 
 export async function createMemberAction(data: any, authUserId: string, societyId: string) {
   try {
-    // Relaxed for demo purposes if strictly trying to evaluate MVP 
     const adminMembership = await prisma.membership.findFirst({
-      where: { userId: authUserId, societyId: societyId }
+      where: { userId: authUserId, societyId }
     });
 
     if (!adminMembership && authUserId !== data.email) {
-       // We'll allow it to proceed for the prototype but typically this would block:
-       // throw new Error("Unauthorized to create members.");
     }
 
-    // Attempt to find existing user by email or create standard stub
     const user = await prisma.user.upsert({
       where: { email: data.email },
       update: {},
@@ -41,7 +36,7 @@ export async function createMemberAction(data: any, authUserId: string, societyI
     const membership = await prisma.membership.create({
       data: {
         userId: user.id,
-        societyId: societyId,
+        societyId,
         memberNumber: data.memberNumber || null,
         role: data.role || "MEMBER",
         status: data.status || "PENDING",
@@ -65,9 +60,8 @@ export async function createMemberAction(data: any, authUserId: string, societyI
     });
 
     await logAudit(societyId, authUserId, "MEMBER_CREATED", "MEMBERSHIP", membership.id, { email: data.email });
-
     return { success: true, membershipId: membership.id };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Failed to add member" };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to add member" };
   }
 }

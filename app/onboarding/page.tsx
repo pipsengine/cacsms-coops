@@ -2,7 +2,7 @@
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createSocietyAction } from "@/app/actions/onboarding";
+import { createSocietyAction } from "@/server/actions/onboarding";
 import { Loader2, Building, ShieldCheck } from "lucide-react";
 
 export default function OnboardingPage() {

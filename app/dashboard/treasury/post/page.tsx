@@ -3,9 +3,9 @@ import { ArrowLeft, Save, Loader2, CheckCircle2 } from "lucide-react";
 import LinkWrapper from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getMembersBySociety } from "@/app/actions/members";
-import { getContributionProducts, postTransaction } from "@/app/actions/treasury";
-import { getOrCreateDefaultSociety } from "@/app/actions/context";
+import { getMembersBySociety } from "@/server/actions/members";
+import { getContributionProducts, postTransaction } from "@/server/actions/treasury";
+import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function PostTransactionPage() {
