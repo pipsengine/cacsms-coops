@@ -2,9 +2,12 @@
 
 Enterprise-structured Next.js application for cooperative society operations, including membership, treasury, loans, governance, notices, onboarding, and portal workflows.
 
+This repository uses the Next.js App Router under the `app/` directory and builds with the standard Next.js toolchain.
+
 ## Stack
 
 - Next.js 15
+- Next.js App Router
 - React 19
 - TypeScript
 - Prisma with PostgreSQL
