@@ -1,0 +1,847 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------
+// PLATFORM LEVEL: Multi-Tenant Foundation
+// ------------------------------------------------------
+
+model User {
+  id            String       @id @default(uuid())
+  email         String       @unique
+  firstName     String
+  lastName      String
+  phoneNumber   String?
+  avatarUrl     String?
+  
+  isSuperAdmin  Boolean      @default(false)
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  memberships   Membership[] 
+  notifications Notification[]
+}
+
+model Society {
+  id                 String       @id @default(uuid())
+  name               String
+  acronym            String?
+  registrationNumber String?
+  type               SocietyType  @default(MULTIPURPOSE)
+  
+  dateOfEstablishment DateTime?
+  dateOfRegistration  DateTime?
+  state              String?
+  lga                String?
+  region             String?
+  address            String?
+  contactPhone       String?
+  officialEmail      String?
+  website            String?
+  taxId              String?
+  logoUrl            String?
+  
+  // Settings
+  currency           String       @default("USD")
+  timeZone           String       @default("UTC")
+  isActive           Boolean      @default(true)
+  
+  // SaaS tenant routing
+  subdomain          String?      @unique 
+  
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  members            Membership[]
+  branches           Branch[]
+  auditLogs          AuditLog[]
+  notices            Notice[]
+  products           ContributionProduct[]
+  transactions       Transaction[]
+  loanProducts       LoanProduct[]
+  loans              Loan[]
+  
+  // Phase 4 relations
+  accountingPeriods  AccountingPeriod[]
+  accounts           Account[]
+  journals           JournalEntry[]
+  expenses           ExpenseVoucher[]
+  bankAccounts       BankAccount[]
+  meetings           Meeting[]
+  complianceRecords  ComplianceRecord[]
+  
+  // Phase 5 relations
+  supportTickets     SupportTicket[]
+  notifications      Notification[]
+  integrationLogs    IntegrationLog[]
+}
+
+model Branch {
+  id          String   @id @default(uuid())
+  societyId   String
+  name        String
+  address     String?
+  createdAt   DateTime @default(now())
+  
+  society     Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  memberships Membership[]
+  notices     Notice[]
+}
+
+// ------------------------------------------------------
+// SOCIETY LEVEL: Role-Based Access & Membership
+// ------------------------------------------------------
+
+model Membership {
+  id            String       @id @default(uuid())
+  userId        String
+  societyId     String
+  branchId      String?
+  
+  memberNumber  String? // Auto-generated or custom
+  
+  role          Role         @default(MEMBER)
+  status        MemberStatus @default(PENDING) // Refined 7.2.6
+  
+  joinedAt      DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Financial Rollup Cache for Dashboards
+  totalSavings  Float        @default(0)
+  totalShares   Float        @default(0)
+
+  user          User         @relation(fields: [userId], references: [id])
+  society       Society      @relation(fields: [societyId], references: [id])
+  branch        Branch?      @relation(fields: [branchId], references: [id])
+  
+  profile       MemberProfile?
+  statusLogs    MemberStatusLog[]
+  documents     Document[]
+  transactions  Transaction[]
+  withdrawals   WithdrawalRequest[]
+
+  loansAsBorrower   Loan[]
+  loansAsGuarantor  Guarantor[]
+
+  meetingAttendances MeetingAttendance[]
+  supportTickets     SupportTicket[]
+
+  @@unique([userId, societyId]) 
+  @@index([societyId])
+  @@index([userId])
+}
+
+// 7.2.5 Member Registration & Lifecycle Profile
+model MemberProfile {
+  id                 String        @id @default(uuid())
+  membershipId       String        @unique
+  dateOfBirth        DateTime?
+  gender             Gender?
+  maritalStatus      MaritalStatus?
+  occupation         String?
+  employer           String?
+  residentialAddress String?
+  
+  nextOfKinName      String?
+  nextOfKinPhone     String?
+  nextOfKinRelation  String?
+  
+  idType             String?
+  idUrl              String?       // Document repo reference
+  passportUrl        String?
+  
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  membership         Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+// 7.2.6 Status Tracking Workflow
+model MemberStatusLog {
+  id               String       @id @default(uuid())
+  membershipId     String
+  previousStatus   MemberStatus?
+  newStatus        MemberStatus
+  reason           String?
+  initiatingUserId String?
+  documentUrl      String?      // Reference to uploaded memo
+  
+  date             DateTime     @default(now())
+
+  membership       Membership   @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+// 7.2.8 Document Repository
+model Document {
+  id           String     @id @default(uuid())
+  membershipId String?
+  title        String
+  category     DocCategory
+  url          String
+  uploadedBy   String     // userId
+  createdAt    DateTime   @default(now())
+
+  membership   Membership? @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+// 7.2.9 Announcements
+model Notice {
+  id           String         @id @default(uuid())
+  societyId    String
+  title        String
+  content      String
+  audience     NoticeAudience @default(ALL)
+  branchId     String?
+  authorId     String         // userId
+
+  createdAt    DateTime       @default(now())
+  expiresAt    DateTime?
+
+  society      Society        @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  branch       Branch?        @relation(fields: [branchId], references: [id])
+}
+
+// 7.2.10 Audit Logging
+model AuditLog {
+  id           String   @id @default(uuid())
+  societyId    String
+  userId       String?
+  action       String   // e.g., "MEMBER_CREATED", "STATUS_CHANGED"
+  entityType   String   // e.g., "MEMBERSHIP", "SOCIETY"
+  entityId     String?
+  details      String?  // JSON string
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  society      Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+}
+
+// ------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------
+
+enum SocietyType {
+  STAFF
+  THRIFT_CREDIT
+  FARMERS
+  MARKET
+  TRANSPORT
+  ARTISAN
+  HOUSING
+  MULTIPURPOSE
+}
+
+enum Role {
+  PRESIDENT
+  VICE_PRESIDENT
+  SECRETARY
+  ASSISTANT_SECRETARY
+  TREASURER
+  FINANCIAL_SECRETARY
+  AUDITOR
+  LOAN_OFFICER
+  WELFARE_OFFICER
+  ADMIN_OFFICER
+  CASHIER
+  MEMBER
+  COMMITTEE_MEMBER
+}
+
+// Refactored dynamically per Phase 1 Section 7.2.6
+enum MemberStatus {
+  PENDING           // application pending
+  UNDER_REVIEW      // under review
+  APPROVED          // approved
+  ACTIVE            // active
+  INACTIVE          // inactive
+  SUSPENDED         // suspended
+  RESIGNED          // resigned
+  RETIRED           // retired
+  DECEASED          // deceased
+  EXPELLED          // expelled
+  ARCHIVED          // archived - ensures no soft-deletes lose tracks
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+enum DocCategory {
+  BYE_LAW
+  REGISTRATION_CERT
+  MEMBER_FORM
+  ID
+  MINUTES
+  ELECTION_RESULT
+  LOAN_DOCUMENT
+  GUARANTOR_DOCUMENT
+  POLICY
+  AUDIT_REPORT
+  OTHER
+}
+
+enum NoticeAudience {
+  ALL
+  EXECUTIVES
+  BRANCH
+  COMMITTEE
+}
+
+// ------------------------------------------------------
+// PHASE 2: FINANCIAL OPERATIONS
+// ------------------------------------------------------
+
+model ContributionProduct {
+  id            String   @id @default(uuid())
+  societyId     String
+  name          String
+  description   String?
+  type          ProductType
+  frequency     Frequency @default(MONTHLY)
+  isMandatory   Boolean   @default(false)
+  
+  amountType    AmountType @default(VARIABLE) // FIXED, VARIABLE, FORMULA
+  defaultAmount Float?
+  
+  effectiveDate DateTime @default(now())
+  endDate       DateTime?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  society       Society   @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+}
+
+model Transaction {
+  id                String   @id @default(uuid())
+  societyId         String
+  membershipId      String
+  productId         String?  // Nullable if it's a generic ledger movement
+  
+  amount            Float
+  type              TransactionType
+  paymentMethod     PaymentMethod @default(BANK_TRANSFER)
+  
+  reference         String?
+  narration         String?
+  status            TransactionStatus @default(COMPLETED)
+  
+  postedById        String?  // Id of user who posted
+  receiptNumber     String?  @unique
+  
+  transactionDate   DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  society           Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  membership        Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  product           ContributionProduct? @relation(fields: [productId], references: [id])
+  receipt           Receipt?
+
+  loanId            String?
+  loan              Loan?   @relation("LoanRepayments", fields: [loanId], references: [id])
+}
+
+model Receipt {
+  id            String   @id @default(uuid())
+  transactionId String   @unique
+  receiptNumber String   @unique
+  generatedAt   DateTime @default(now())
+  printedUrl    String?
+
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+model WithdrawalRequest {
+  id            String   @id @default(uuid())
+  membershipId  String
+  type          WithdrawalType
+  amount        Float
+  status        ApprovalStatus @default(PENDING)
+  requestedAt   DateTime @default(now())
+  approvedById  String?
+  
+  membership    Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+enum ProductType {
+  SAVINGS
+  SHARES
+  ENTRANCE_FEE
+  DUES
+  LEVY
+  FINE
+  LOAN_REPAYMENT
+  OTHER
+}
+
+enum Frequency {
+  ONE_TIME
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
+
+enum AmountType {
+  FIXED
+  VARIABLE
+  FORMULA
+}
+
+enum TransactionType {
+  CREDIT  // Increasing member balance
+  DEBIT   // Decreasing member balance
+}
+
+enum TransactionStatus {
+  COMPLETED
+  REVERSED
+  PENDING
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  PAYROLL_DEDUCTION
+  WALLET
+  OTHER
+}
+
+enum WithdrawalType {
+  SAVINGS_WITHDRAWAL
+  SHARE_REFUND
+  EXIT_SETTLEMENT
+}
+
+enum ApprovalStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PAID
+}
+
+// ------------------------------------------------------
+// PHASE 3: LOANS & CREDIT OPERATIONS
+// ------------------------------------------------------
+
+model LoanProduct {
+  id                String   @id @default(uuid())
+  societyId         String
+  name              String
+  description       String?
+  
+  minAmount         Float
+  maxAmount         Float
+  interestRate      Float
+  interestType      InterestType @default(REDUCING_BALANCE)
+  
+  minTenureMonths   Int
+  maxTenureMonths   Int
+  
+  savingsRatio      Float?   // E.g., 3 means max loan is 3x savings
+  requiresGuarantor Boolean  @default(true)
+  guarantorCount    Int      @default(2)
+  processingFee     Float    @default(0)
+  
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  society           Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  loans             Loan[]
+}
+
+model Loan {
+  id               String   @id @default(uuid())
+  societyId        String
+  membershipId     String
+  productId        String
+  
+  principalAmount  Float
+  approvedAmount   Float?
+  disbursedAmount  Float    @default(0)
+  balance          Float    @default(0) // Remaining principal
+  accruedInterest  Float    @default(0)
+  accruedPenalty   Float    @default(0)
+  
+  purpose          String?
+  tenureMonths     Int
+  status           LoanStatus @default(SUBMITTED)
+  
+  appliedAt        DateTime @default(now())
+  approvedAt       DateTime?
+  disbursedAt      DateTime?
+  
+  society          Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  membership       Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  product          LoanProduct @relation(fields: [productId], references: [id])
+  
+  guarantors       Guarantor[]
+  schedules        AmortizationSchedule[]
+  repayments       Transaction[] @relation("LoanRepayments")
+}
+
+model Guarantor {
+  id             String   @id @default(uuid())
+  loanId         String
+  membershipId   String   // The member guaranteeing
+  amountPledged  Float
+  status         GuarantorStatus @default(PENDING)
+  
+  actionDate     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  loan           Loan       @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  membership     Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+model AmortizationSchedule {
+  id               String   @id @default(uuid())
+  loanId           String
+  
+  installmentNo    Int
+  dueDate          DateTime
+  principalDue     Float
+  interestDue      Float
+  penaltyDue       Float    @default(0)
+  totalDue         Float
+  
+  amountPaid       Float    @default(0)
+  isSettled        Boolean  @default(false)
+  
+  loan             Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
+}
+
+enum InterestType {
+  FLAT_RATE
+  REDUCING_BALANCE
+  ZERO_INTEREST
+}
+
+enum LoanStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  PENDING_GUARANTOR
+  PENDING_COMMITTEE
+  APPROVED
+  REJECTED
+  DISBURSED
+  PARTIAL_DISBURSEMENT
+  ACTIVE
+  OVERDUE
+  RESTRUCTURED
+  COMPLETED
+  WRITTEN_OFF
+  RECOVERED
+}
+
+enum GuarantorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RELEASED
+}
+
+// ------------------------------------------------------
+// PHASE 4: ACCOUNTING, TREASURY & GOVERNANCE
+// ------------------------------------------------------
+
+// -- ACCOUNTING --
+
+model AccountingPeriod {
+  id           String   @id @default(uuid())
+  societyId    String
+  name         String   // e.g., "Q1 2026", "Jan 2026"
+  startDate    DateTime
+  endDate      DateTime
+  isClosed     Boolean  @default(false)
+  
+  society      Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  journals     JournalEntry[]
+}
+
+model Account {
+  id           String       @id @default(uuid())
+  societyId    String
+  code         String       // e.g., "1001"
+  name         String       // e.g., "Cash in Bank"
+  type         AccountType
+  balance      Float        @default(0) // Denormalized for perf
+  
+  society      Society      @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  journalLines JournalLine[]
+  
+  @@unique([societyId, code])
+}
+
+model JournalEntry {
+  id           String             @id @default(uuid())
+  societyId    String
+  periodId     String?
+  reference    String?
+  description  String
+  date         DateTime           @default(now())
+  postedById   String
+  isPosted     Boolean            @default(true) // Draft vs Posted
+  
+  society      Society            @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  period       AccountingPeriod?  @relation(fields: [periodId], references: [id])
+  lines        JournalLine[]
+}
+
+model JournalLine {
+  id           String       @id @default(uuid())
+  journalId    String
+  accountId    String
+  debit        Float        @default(0)
+  credit       Float        @default(0)
+  
+  journal      JournalEntry @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  account      Account      @relation(fields: [accountId], references: [id])
+}
+
+// -- TREASURY --
+
+model ExpenseVoucher {
+  id           String         @id @default(uuid())
+  societyId    String
+  voucherNo    String         @unique
+  amount       Float
+  date         DateTime       @default(now())
+  category     String
+  payee        String
+  description  String
+  status       ExpenseStatus  @default(PENDING_APPROVAL)
+  
+  requestedBy  String         // userId
+  approvedBy   String?        // userId
+  
+  society      Society        @relation(fields: [societyId], references: [id], onDelete: Cascade)
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  societyId     String
+  bankName      String
+  accountName   String
+  accountNumber String
+  currency      String   @default("USD")
+  balance       Float    @default(0)
+  
+  society       Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+}
+
+// -- GOVERNANCE & MEETINGS --
+
+model Meeting {
+  id           String        @id @default(uuid())
+  societyId    String
+  title        String
+  type         MeetingType
+  date         DateTime
+  location     String?
+  agenda       String?
+  minutes      String?
+  status       MeetingStatus @default(SCHEDULED)
+  
+  society      Society       @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  attendees    MeetingAttendance[]
+  resolutions  Resolution[]
+}
+
+model MeetingAttendance {
+  id           String            @id @default(uuid())
+  meetingId    String
+  membershipId String
+  status       AttendanceStatus  @default(PRESENT)
+
+  meeting      Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  membership   Membership        @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+}
+
+model Resolution {
+  id           String   @id @default(uuid())
+  meetingId    String
+  title        String
+  decision     String
+  implemented  Boolean  @default(false)
+  
+  meeting      Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model ComplianceRecord {
+  id           String           @id @default(uuid())
+  societyId    String
+  title        String
+  type         ComplianceType
+  dueDate      DateTime?
+  status       ComplianceStatus @default(PENDING)
+  notes        String?
+  
+  society      Society          @relation(fields: [societyId], references: [id], onDelete: Cascade)
+}
+
+// -- ENUMS for PHASE 4 --
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+enum ExpenseStatus {
+  PENDING_APPROVAL
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum MeetingType {
+  AGM
+  ORDINARY
+  EMERGENCY
+  COMMITTEE
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+
+enum ComplianceType {
+  STATUTORY_RETURN
+  TAX_FILING
+  AUDIT
+  LICENSE_RENEWAL
+  OTHER
+}
+
+enum ComplianceStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+}
+
+// ------------------------------------------------------
+// PHASE 5: MEMBER SERVICES, SUPPORT, & INTEGRATIONS
+// ------------------------------------------------------
+
+model SupportTicket {
+  id           String        @id @default(uuid())
+  societyId    String
+  membershipId String
+  subject      String
+  category     TicketCategory @default(GENERAL)
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  description  String
+  
+  assignedToId String?       // userId of admin
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  society      Society       @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  membership   Membership    @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  messages     TicketMessage[]
+}
+
+model TicketMessage {
+  id               String       @id @default(uuid())
+  ticketId         String
+  senderId         String       // userId
+  message          String
+  attachmentUrl    String?
+  createdAt        DateTime     @default(now())
+
+  ticket           SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id           String        @id @default(uuid())
+  societyId    String
+  userId       String
+  title        String
+  message      String
+  type         NotificationType
+  isRead       Boolean       @default(false)
+  
+  createdAt    DateTime      @default(now())
+
+  society      Society       @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model IntegrationLog {
+  id           String   @id @default(uuid())
+  societyId    String
+  service      String   // e.g., "PAYMENT_GATEWAY", "SMS_PROVIDER"
+  status       String   // e.g., "SUCCESS", "FAILED"
+  payload      String?
+  response     String?
+  createdAt    DateTime @default(now())
+
+  society      Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+}
+
+enum TicketCategory {
+  GENERAL
+  LOAN_INQUIRY
+  ACCOUNT_UPDATE
+  PAYMENT_ISSUE
+  TECHNICAL
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_MEMBER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  SYSTEM
+  ACCOUNT
+  FINANCIAL
+  MEETING
+  MARKETING
+}
