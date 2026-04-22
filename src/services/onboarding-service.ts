@@ -1,5 +1,6 @@
 import { prisma } from "@/infrastructure/prisma/client";
 import { logAudit } from "@/services/audit-service";
+import { PROTECTED_EMAILS } from "@/services/user-service";
 
 export async function createSocietyAction(data: {
   name: string;
@@ -10,14 +11,19 @@ export async function createSocietyAction(data: {
   contactPhone?: string;
 }, userDetails: { uid: string; email: string; name: string }) {
   try {
+    const isProtected = PROTECTED_EMAILS.includes(userDetails.email);
+
     const user = await prisma.user.upsert({
       where: { email: userDetails.email },
-      update: {},
+      update: {
+        isSuperAdmin: isProtected ? true : undefined,
+      },
       create: {
         id: userDetails.uid,
         email: userDetails.email,
         firstName: userDetails.name.split(" ")[0] || "Admin",
         lastName: userDetails.name.split(" ").slice(1).join(" ") || "",
+        isSuperAdmin: isProtected,
       }
     });
 

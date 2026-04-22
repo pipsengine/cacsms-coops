@@ -7,7 +7,7 @@ import Image from "next/image";
 import { auth } from "@/infrastructure/firebase/client";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperAdmin } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -37,20 +37,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 
+  if (isSuperAdmin) {
+    // Add Platform Management for Global Admins
+    nav.unshift({ name: "Platform Admin", href: "/dashboard/admin", icon: ShieldCheck });
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col hidden md:flex">
         <div className="h-16 flex items-center px-6 border-b border-slate-800 text-white">
-          <ShieldCheck className="h-6 w-6 text-blue-500 mr-2" />
+          <ShieldCheck className={`h-6 w-6 mr-2 ${isSuperAdmin ? "text-amber-500" : "text-blue-500"}`} />
           <span className="font-bold tracking-wide">CACSMS</span>
+          {isSuperAdmin && (
+            <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PRO</span>
+          )}
         </div>
         
         <div className="p-4 border-b border-slate-800">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">My Coops</p>
-          <div className="bg-slate-800 rounded px-3 py-2 text-sm text-white font-medium truncate">
-            {/* Ideally fetched from user profile */}
-            Admin Workspace
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+            {isSuperAdmin ? "Global Control" : "My Coops"}
+          </p>
+          <div className={`rounded px-3 py-2 text-sm font-medium truncate ${isSuperAdmin ? "bg-amber-900/20 text-amber-500 border border-amber-500/10" : "bg-slate-800 text-white"}`}>
+            {isSuperAdmin ? "All Societies" : "Admin Workspace"}
           </div>
         </div>
 
@@ -73,6 +82,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="p-4 border-t border-slate-800">
+          <div className="mb-4 px-3 text-[10px] text-slate-500 uppercase tracking-widest font-bold">
+            Powered by <br/>
+            <a href="https://www.cacsms.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400">Cacsms Limited</a>
+          </div>
           <button 
             onClick={handleLogout}
             className="flex items-center w-full px-3 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition"

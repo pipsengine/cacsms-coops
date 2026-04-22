@@ -160,6 +160,26 @@ export default function NewMemberPage() {
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="p-6 border-b border-slate-200 bg-slate-50/50">
+            <h2 className="text-base font-semibold text-slate-900">Next of Kin & Emergency Contact</h2>
+          </div>
+          <div className="p-6 grid md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Full Name</label>
+              <input type="text" name="nextOfKinName" value={formData.nextOfKinName} onChange={handleChange} className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Phone Number</label>
+              <input type="tel" name="nextOfKinPhone" value={formData.nextOfKinPhone} onChange={handleChange} className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Relationship</label>
+              <input type="text" name="nextOfKinRelation" value={formData.nextOfKinRelation} onChange={handleChange} placeholder="e.g. Spouse, Sibling" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent text-sm" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-6 border-b border-slate-200 bg-slate-50/50">
             <h2 className="text-base font-semibold text-slate-900">System & Governance Mapping</h2>
           </div>
           <div className="p-6 grid md:grid-cols-3 gap-6">

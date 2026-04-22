@@ -1,6 +1,6 @@
 "use client";
+import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
 import { getAccountingOverviewData } from "@/server/actions/accounting";
 import { getOrCreateDefaultSociety } from "@/server/actions/context";
 import { useAuth } from "@/infrastructure/auth/auth-context";

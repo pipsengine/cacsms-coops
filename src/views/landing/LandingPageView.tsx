@@ -74,6 +74,9 @@ export default function LandingPageView() {
 
       <footer className="bg-slate-900 text-slate-400 py-8 text-center text-sm">
         <p>© 2026 Cacsms Coops Platform. All rights reserved.</p>
+        <p className="mt-2 text-slate-500">
+          Developed and Powered by <a href="https://www.cacsms.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 font-medium">Cacsms Limited</a>
+        </p>
       </footer>
     </div>
   );
