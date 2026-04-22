@@ -3,11 +3,10 @@ import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { getAccountingOverviewData } from "@/server/actions/accounting";
 import { getOrCreateDefaultSociety } from "@/server/actions/context";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 import AccountingDashboardView from "@/views/accounting/AccountingDashboardView";
 
 export default function AccountingDashboard() {
-  const { user } = useAuth();
+   // const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
      bankAccountsCount: 0,

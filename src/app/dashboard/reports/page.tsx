@@ -1,10 +1,9 @@
 "use client";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 import { Download, FileText, PieChart, Users, Banknote, ShieldAlert, BookOpen, Clock, Loader2, Search } from "lucide-react";
 import { useState } from "react";
 
 export default function ReportsDashboard() {
-  const { user } = useAuth();
+  // const { data: session } = useSession();
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleExport = (reportName: string) => {

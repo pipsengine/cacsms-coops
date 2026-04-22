@@ -1,13 +1,17 @@
 "use client";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import LandingPageView from "@/views/landing/LandingPageView";
 
 export default function LandingPage() {
-  const { user, loading } = useAuth();
   const router = useRouter();
+  const { data: session, status } = useSession();
 
-  if (!loading && user) {
+  if (status === "loading") {
+    return null; // or a loading spinner if you prefer
+  }
+
+  if (session?.user) {
     router.push("/dashboard");
     return null;
   }

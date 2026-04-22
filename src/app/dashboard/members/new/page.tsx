@@ -5,11 +5,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMemberAction } from "@/server/actions/members";
 import { getOrCreateDefaultSociety } from "@/server/actions/context";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 
 export default function NewMemberPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  // const { data: session } = useSession();
   
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

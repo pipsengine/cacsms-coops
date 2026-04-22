@@ -6,11 +6,10 @@ import { useRouter } from "next/navigation";
 import { getMembersBySociety } from "@/server/actions/members";
 import { getContributionProducts, postTransaction } from "@/server/actions/treasury";
 import { getOrCreateDefaultSociety } from "@/server/actions/context";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 
 export default function PostTransactionPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  // const { data: session } = useSession();
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);

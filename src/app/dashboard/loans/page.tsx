@@ -4,10 +4,9 @@ import LinkWrapper from "next/link";
 import { useState, useEffect } from "react";
 import { getLoanOverviewData } from "@/server/actions/loans";
 import { getOrCreateDefaultSociety } from "@/server/actions/context";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 
 export default function LoansDashboard() {
-  const { user } = useAuth();
+  // const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
      queue: [] as any[],

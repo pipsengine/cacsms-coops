@@ -5,10 +5,9 @@ import { useState, useEffect } from "react";
 import { getMembersBySociety } from "@/server/actions/members";
 import { getLoanProducts, applyForLoan } from "@/server/actions/loans";
 import { getOrCreateDefaultSociety } from "@/server/actions/context";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 
 export default function NewLoanApplication() {
-  const { user } = useAuth();
+    // const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [success, setSuccess] = useState(false);

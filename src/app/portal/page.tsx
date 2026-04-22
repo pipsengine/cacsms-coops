@@ -2,11 +2,10 @@
 import { Wallet, Coins, PiggyBank, ArrowDownRight, ArrowUpRight, Activity, HandCoins, AlertCircle, Loader2 } from "lucide-react";
 import LinkWrapper from "next/link";
 import { useState, useEffect } from "react";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 import { getPortalOverviewData } from "@/server/actions/portal";
 
 export default function PortalDashboard() {
-  const { user } = useAuth();
+    // const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");

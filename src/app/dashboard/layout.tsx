@@ -1,27 +1,31 @@
 "use client";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 import { useRouter, usePathname } from "next/navigation";
 import { LogOut, ShieldCheck, Loader2, Home, Users, Banknote, Settings, Menu, MessageSquare, X, FileText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { auth } from "@/infrastructure/firebase/client";
+import { signOut, useSession } from "next-auth/react";
+import { useEffect } from "react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, isSuperAdmin } = useAuth();
+  const { data: session, status } = useSession();
+  const user = session?.user;
+  const loading = status === "loading";
   const router = useRouter();
   const pathname = usePathname();
 
-  if (loading) {
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [loading, user, router]);
+
+  if (loading || !user) {
     return <div className="h-screen w-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
   }
 
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
-
   const handleLogout = async () => {
-    await auth.signOut();
+    await signOut({ callbackUrl: "/" });
     router.push("/");
   };
 

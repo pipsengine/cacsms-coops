@@ -3,11 +3,10 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getMembersBySociety } from "@/server/actions/members";
 import { getOrCreateDefaultSociety } from "@/server/actions/context";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 import MembersListView from "@/views/members/MembersListView";
 
 export default function MembersPage() {
-  const { user } = useAuth();
+  // const { data: session } = useSession();
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

@@ -1,12 +1,11 @@
 "use client";
-import { useAuth } from "@/infrastructure/auth/auth-context";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createSocietyAction } from "@/server/actions/onboarding";
 import { Loader2, Building, ShieldCheck } from "lucide-react";
 
 export default function OnboardingPage() {
-  const { user, loading } = useAuth();
+  // const { data: session } = useSession();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -1,37 +1,37 @@
 "use client";
-
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ShieldCheck, Loader2, Mail, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ShieldCheck, Loader2, Mail, Lock, ArrowRight } from "lucide-react";
 import { motion } from "motion/react";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoggingIn(true);
+    setIsRegistering(true);
     setError(null);
     try {
-      const res = await signIn("credentials", {
-        redirect: false,
-        email,
-        password,
+      const regRes = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
       });
-      if (res?.ok) {
-        router.push("/dashboard");
+      const regData = await regRes.json();
+      if (regRes.ok) {
+        router.push("/login?registered=1");
       } else {
-        setError(res?.error || "Invalid credentials");
+        setError(regData.error || "Registration failed");
       }
     } catch (err: any) {
-      setError(err.message || "Authentication failed.");
+      setError(err.message || "Registration failed.");
     } finally {
-      setIsLoggingIn(false);
+      setIsRegistering(false);
     }
   };
 
@@ -48,15 +48,29 @@ export default function LoginPage() {
               <ShieldCheck className="h-10 w-10 text-emerald-600" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
-          <p className="text-slate-500 mt-1">Access your cooperative dashboard</p>
+          <h2 className="text-2xl font-bold text-slate-900">Create your account</h2>
+          <p className="text-slate-500 mt-1">Join the platform today</p>
         </div>
         {error && (
           <div className="mb-6 p-3 rounded-lg text-sm border bg-red-50 text-red-600 border-red-100">
             {error}
           </div>
         )}
-        <form onSubmit={handleEmailAuth} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600 outline-none transition"
+                placeholder="John Doe"
+              />
+              <ArrowRight className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
             <div className="relative">
@@ -72,9 +86,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-sm font-medium text-slate-700">Password</label>
-            </div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
             <div className="relative">
               <input
                 type="password"
@@ -89,19 +101,18 @@ export default function LoginPage() {
           </div>
           <button
             type="submit"
-            disabled={isLoggingIn}
+            disabled={isRegistering}
             className="w-full flex items-center justify-center py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 disabled:opacity-50"
           >
-            {isLoggingIn ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
-            Sign In
+            {isRegistering ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : null}
+            Create Account
           </button>
         </form>
         <p className="mt-8 text-center text-sm text-slate-500">
-          Don&apos;t have an account?{' '}
-          <a href="/register" className="text-emerald-600 font-bold hover:underline">Sign up</a>
+          Already have an account?{' '}
+          <a href="/login" className="text-emerald-600 font-bold hover:underline">Sign in</a>
         </p>
       </motion.div>
     </div>
   );
 }
-
